@@ -1,13 +1,17 @@
-import { ModelType } from '@typegoose/typegoose/lib/types';
-import { GenreModel } from './genre.model';
-import { InjectModel } from 'nestjs-typegoose';
+import { ICollection } from './genre.interface';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ModelType } from '@typegoose/typegoose/lib/types';
+import { InjectModel } from 'nestjs-typegoose';
+
 import { CreateGenreDto } from './dto/create-genre.dto';
+import { MovieService } from './../movie/movie.service';
+import { GenreModel } from './genre.model';
 
 @Injectable()
 export class GenreService {
 	constructor(
 		@InjectModel(GenreModel) private readonly genreModel: ModelType<GenreModel>,
+		private readonly movieService: MovieService,
 	) {}
 
 	async bySlug(slug: string) {
@@ -41,9 +45,23 @@ export class GenreService {
 
 	async getCollections() {
 		const genres = await this.getAll();
-		const collection = genres;
-		// nead write
-		return collection;
+		// const collections = genres;
+		const collections = await Promise.all(
+			genres.map(async (genre) => {
+				const moviesByGenre = await this.movieService.byGenres([genre._id]);
+
+				const result: ICollection = {
+					_id: String(genre._id),
+					image: moviesByGenre.bigPoster,
+					slug: genre.slug,
+					title: genre.name,
+				};
+
+				return result;
+			}),
+		);
+
+		return collections;
 	}
 
 	// Admin place
