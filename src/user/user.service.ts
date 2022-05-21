@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ModelType } from '@typegoose/typegoose/lib/types';
 import { InjectModel } from 'nestjs-typegoose';
 import { genSalt, hash } from 'bcryptjs';
+import { Types } from 'mongoose';
 
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserModel } from './user.model';
@@ -68,5 +69,30 @@ export class UserService {
 
 	async delete(id: string) {
 		return this.userModel.findByIdAndDelete(id).exec();
+	}
+
+	async toggleFavorites(movieId: Types.ObjectId, user: UserModel) {
+		const { _id, favorites } = user;
+
+		if (favorites) {
+			await this.userModel.findByIdAndUpdate(_id, {
+				favorites: favorites.includes(movieId)
+					? favorites.filter((id) => String(id) !== String(movieId))
+					: [...favorites, movieId],
+			});
+		}
+	}
+
+	async getFavoritesMovies(_id: Types.ObjectId) {
+		return this.userModel
+			.findById(_id, 'favorites')
+			.populate({
+				path: 'favorites',
+				populate: {
+					path: 'genres',
+				},
+			})
+			.exec()
+			.then((data) => data?.favorites);
 	}
 }
