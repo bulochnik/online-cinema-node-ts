@@ -11,26 +11,6 @@ export class MovieService {
 		@InjectModel(MovieModel) private readonly movieModel: ModelType<MovieModel>,
 	) {}
 
-	// async getAll(searchTerm?: string) {
-	// 	let options = {};
-
-	// 	if (searchTerm) {
-	// 		options = {
-	// 			$or: [
-	// 				{
-	// 					title: new RegExp(searchTerm, 'i'),
-	// 				},
-	// 			],
-	// 		};
-	// 	}
-
-	// 	return this.movieModel
-	// 		.find(options)
-	// 		.select('-updatedAt -__v')
-	// 		.sort({ createdAt: 'desc' })
-	// 		.populate('actors genres')
-	// 		.exec();
-	// }
 	async getAll(searchTerm?: string) {
 		let options = {};
 
@@ -103,8 +83,21 @@ export class MovieService {
 		return updateDoc;
 	}
 
-	// Admin place
+	async updateRating(id: Types.ObjectId, newRating: number) {
+		return this.movieModel
+			.findByIdAndUpdate(
+				id,
+				{
+					rating: newRating,
+				},
+				{
+					new: true,
+				},
+			)
+			.exec();
+	}
 
+	// Admin place
 	async byId(_id: string) {
 		const doc = await this.movieModel.findById(_id);
 		if (!doc) throw new NotFoundException('Movie not found');
